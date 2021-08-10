@@ -1,0 +1,28 @@
+#+AUTHOR: wfj
+#+EMAIL: wufangjie1223@126.com
+#+OPTIONS: ^:{} \n:t email:t
+#+HTML_HEAD_EXTRA: <style type="text/css"> body {padding-left: 26%; background: #e3edcd;} #table-of-contents {position: fixed; width: 25%; height: 100%; top: 0; left: 0; overflow-y: scroll; resize: horizontal;} i {color: #666666;} pre, pre.src:before {color: #ffffff; background: #131926;} </style>
+#+HTML_HEAD_EXTRA: <script type="text/javascript"> function adjust_html(){document.getElementsByTagName("body")[0].style.cssText="padding-left: "+(parseInt(document.getElementById("table-of-contents").style.width)+5)+"px; background: #e3edcd;"}; window.onload=function (){document.getElementById("table-of-contents").addEventListener("mouseup",adjust_html,true)}</script>
+
+* 如果你也经历过以下情况, 那么你可以试试我合成的这款字体
++ org-mode 的表格对不齐
++ terminal 中的 mysql 表对不齐
++ 在 emacs 中对不同的字符集设置不同字体和大小来达到等宽，但是纯英文行的高度会明显比中文或混编的小
++ 网上下载了所谓的等宽字体，但仅仅是各自字符集的等宽，有些特殊字符还会出现莫名其妙的宽度
+
+* 版权
+字体是有版权的, 所以仅供个人使用交流, 严禁用于商业用途
+
+* DIY
+想自己动手的可以参考 repo 中的 note.org
+
+* 问题
+同一字符, 在不同字符集宽度是不同的, 比如:
++ 外国人名字间隔的一点, 英文时宽度是 1, 中文时应该是 2
++ 英文也有双弯引号, (网上说直引号只是一种妥协, 打字机时代为了节省键位, 类似于拼音中的 lv)
+
+* 命名
+缘莫问, 取被合成字体 YouYuan, Monaco, WenQuanYi Micro Hei Mono 的第一个字母组合而成
+
+* 更新
+v0.06: 修改下划线粗细

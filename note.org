@@ -1,0 +1,152 @@
+#+TITLE:font
+#+AUTHOR: wfj
+#+EMAIL: wufangjie1223@126.com
+#+OPTIONS: ^:{} \n:t email:t
+#+HTML_HEAD_EXTRA: <style type="text/css"> body {padding-left: 26%; background: #e3edcd;} #table-of-contents {position: fixed; width: 25%; height: 100%; top: 0; left: 0; overflow-y: scroll; resize: horizontal;} i {color: #666666;} pre, pre.src:before {color: #ffffff; background: #131926;} </style>
+#+HTML_HEAD_EXTRA: <script type="text/javascript"> function adjust_html(){document.getElementsByTagName("body")[0].style.cssText="padding-left: "+(parseInt(document.getElementById("table-of-contents").style.width)+5)+"px; background: #e3edcd;"}; window.onload=function (){document.getElementById("table-of-contents").addEventListener("mouseup",adjust_html,true)}</script>
+
+* 宽度
+根据 LC_CTYPE 不同等宽字体的宽度也会不同, 比如 en_US.UTF-8 的所有 161 ~ 255 的字符宽度都是 1, 而 zh_CN.UTF-8 中有定义的一些字符宽度就是 2, 而且表示的意思也不同, 比如中文用来表示注音的符号
+#+BEGIN_SRC emacs-lisp
+(let ((i 161))
+  (while (< i 256)
+    (if (= 2 (string-width (format "%c" i)))
+	(princ (format "%d\t%c|\n" i i)))
+    (setq i (+ i 1))))
+#+END_SRC
+1. 这也是为什么 emacs -nw 水平分割窗口时中间那条线会对不齐 (M-x info => org-mode)
+2. 设置 LC_CTYPE 为 en_US.UTF-8 就可以解决了, 但是这么设置的话 gui 下的 emacs 就无法使用 xim, 也就是说不能使用系统级的输入法输入中文 (包括 wayland 也不行), 据说这是一个 emacs 存在已久的 bug
+3. 那么用 emacs 自带的总行了吧, 虽然同系统中的输入体验可能会受影响, 但是想想跨系统的所有 emacs 都能有一样的输入体验, 还是挺激动的, 这种做法是在 minibuffer 显示候选词然后选择, 但是这就有了一个新的问题, minibuffer 中需要输入中文的时候怎么办, 比如要打开一个中文路径
+4. 当然第 3 可以配合使用我的 kuma 项目来解决, 随时换出一个可以使用系统输入法输入的 inputbox, 打字并剪切 (kuma 拥有 emacs 快捷键绑定, 当然 kuma 的设计初衷不是这个, 它还有着更强大的功能)
+5. 另一种能想到的解决方案就是改 string-width 和 char-width, 我试着修改了它们, 但还是无法彻底解决这个问题, 应该还有别的函数来影响, 还是 M-x info => org-mode, 在那一行按 C-e 就会乱码, 有时间可以深入研究一下这个函数
+6. 最后一种方法是用 en_US.UTF-8, 然后用 emacs -nw, 因为 terminal 可以输入中文, 这已经是我第四次去研究使用 emacs -nw, 虽然解决了很多问题, 但有还是有一些无法解决, 比如说自动折行 (较长的行) 碰上 auto-complete, M-n/p 无法正确计算位置, 要把那些折的行也算进去
+7. 对于 6 这种方法, 我还不知道其他系统要如何设置
+
+NOTE: terminal 天生是等宽的, 猜测这是因为它是计算字的应有宽度, 然后在那个位置开始显示下一个字符, 这一点我用修改 string-width 为总是返回常数 1 的函数然后观察中文的显示, 发生重叠的情况得出的; 而 emacs 是支持不等宽的字体的, 所以它就是一个接着一个显示的
+
+#+BEGIN_SRC emacs-lisp
+(defalias 'char-width-backup (symbol-function 'char-width))
+(defalias 'string-width-backup (symbol-function 'string-width))
+
+(defun char-width (c)
+  ; for chinese
+  (cond ((< c 159) (char-width-backup c))
+  	((< c ?\u3000) 1)
+  	((< c ?\ufb00) 2)
+  	(t (char-width-backup c))))
+
+(defun string-width (c)
+  (reduce (lambda (x y) (+ x (char-width y)))
+	  c
+	  :initial-value 0))
+#+END_SRC
+
+* 幼圆
++ 惊奇地发现幼圆字体竟然是全字符等宽的, 而且也很漂亮, 就是数字 0 和大写的 O 很难区别
++ 解决方法一是仍然用原来的 emacs 自带的组合字体的方法, 这样仍然不能避免字体本身存在的等宽问题, 另外会有中文行和非中文行会有高度不同的问题
++ 另一个方法就是自己手动合成并修改字体了, 详见下文的 工具 => FontForge
++ 幼圆没有 0x3000 即中文的空格字符, 手动加
++ 幼圆的 183 号字符 (常见于翻译的外国人名) 是全角的, 但 emacs 的 string-width 返回的是 1, 而且确实看起来太大了, 于是就改成了 Monaco 的
++ 如果是适用于 en_US.UTF-8 的字宽又不一样了, 比如希腊字母, 可以用文泉译等宽微米黑的来代替 (不过这个等宽我真是呵呵了, 东拼西凑的, 宽度不完全一样, 不逐个检查我都不敢用)
+
+* 发现幼圆之前
+我用的是 Monaco 配合 Hannotate, 但是 Hannotate 在不同角度看的时候笔画会有深浅, 看起来很不舒服, 而且因为不是全字符等宽会有各种潜在问题 (其实即便是全字符等宽也还是有问题), 比如弯引号应该是全角的, 但 Monaco 并没有这个字符, 所以就出现了显示问题 (包括选中, 移动和 terminal 下 buffer 的水平分割问题, 很长一段时间我还以为是 emacs25 的问题)
+
+* 全角符号
+** en_US.UTF-8
+*** 0x3000 以下没有 2 字宽的字体
+*** 之后一直到 都是 2 字宽, 除了一个韩文标点 0x303f 是 1 字宽
+*** 汉字区 2 字宽, 但是汉字兼容区, 和几个生僻字区, 比如上龙下天 字宽是 1
+*** 之后同 zh_CN.UTF-8, 大于 65535 的没研究过
+** zh_CN.UTF-8
+*** 128 ~ 256 之间可能会用到的符号
+| 167 | § |                   |
+| 176 | ° |                   |
+| 177 | ± |                   |
+| 183 | ·  | string-width 半角 |
+| 215 | × |                   |
+| 247 | ÷ |                   |
+
+*** 0x2000 ~ 0x2642 弯引号, 省略号, 数学符号, 序号, 图形
+知乎上说直引号是打字机时代的将就, 奇怪的是这些符号竟然是全角的
+| 0x2018 | ‘ | 英文文章里出现, 实在是很不协调, 暂时不管 |
+| 0x2019 | ’ |                                          |
+| 0x201c | “ |                                          |
+| 0x201d | ” |                                          |
+| 0x2026 | … |                                          |
+NOTE: 0x2581 ~ 0x258e 这 15 (7+1+7) 个字符可以用来做进度条 (pip 用的就是这个), 但 string-width 算出来是 1, 改掉, 幼圆自带的左边距不等, 改成 hannotate 的缩放版本
+*** 0x3000 ~ 0x3017 以及之后很多不常用的 CJK 标点, 单位和符号
+| 0x3000 | 　 | 全角空格      |
+| 0x3001 | 、 |               |
+| 0x3002 | 。 |               |
+|--------+----+---------------|
+| 0x300a | 《 |               |
+| 0x300b | 》 |               |
+| 0x300c | 「 | 直角引号 横向 |
+| 0x300d | 」 |               |
+| 0x300e | 『 |               |
+| 0x300f | 』 |               |
+| 0x3010 | 【 |               |
+| 0x3011 | 】 |               |
+|--------+----+---------------|
+| 0x3014 | 〔 |               |
+| 0x3015 | 〕 |               |
+| 0x3016 | 〖 |               |
+| 0x3017 | 〗 |               |
+
+*** 0x4e00 ~ 0x9fa5 为汉字区
+这个是早期版本的 Unicode 汉字区, 也就是常说的 20902 个汉字, 后来又后延了 22 个, 详见 http://www.fmddlmyy.cn/text24.html
+
+*** 0xfe30 ~ 竖排标点符号和 Small 版本
+*** 0xff01 ~ 0xff5e 常用字符 33 ~ 126 的全角版本
+*** 其他特殊符号, 不常用, 不记
+
+* 工具
+** python3
+1. 首先了解以下十六进制表示法和 \u 转义
+2. 熟练使用以下函数: hex, chr, ord, print
+
+** FontForge
+鼠标停在字符上会出现 unicode 序号
+*** 选中
++ 单击选中单个字, 再次单击取消
++ 拖动选中
++ Ctrl+a 全选
+
+*** 改变和撤销
+每一个修改过的字, 上方都会高亮显示, Ctrl+z 可以撤销修改, 选中的话还能批量修改
+
+*** 合并
+Element => Font Info => General => Em Size 想要把两种字体所见即所得地拼起来, 最重要的是两者的 Em Size 要相等, 不相等地话, 可以选中再使用 Element => Transformations => Transform 进行统一转化, 步骤如下:
+1. Origin 改为 Glyph Origin
+2. Scale 或 Scale Uniformly 之后下面选择 Move X: 0.01, 要不然 x 轴不会均匀变化 (也可能是预览的显示问题, 就像 Round To Int 一样)
+3. 勾选 Transform Width
+4. 勾选 Round To Int
+5. 其他地勾选就按默认的来吧, 还不太明白有什么用
+
+NOTE: 单字符 transform 操作基本和统一转化一样, 点击 Apply 可以预览效果, 可以多次点击来尝试不同方法
++NOTE: 如果字体文件较大, 而你只需要几个字符就行了, 统一转化会很慢, 新建一个字体 (File => New) 然后复制那几个需要的字符过去, 然后在新字体中转化会比较好+
+NOTE: 不要复制到新建字体, 没必要, 而且会有不能撤销, 复制没有的字体为空白等等问题
+
+*** 等宽的三种调整
+| x 轴方向移动   | 适用于两边空隙很大, 需要缩小的情况 |
+| 仅 x 轴缩放    | 适用于 y 轴有特殊要求的情况        |
+| xy轴同比例缩放 | 一般情况, 完全保持原字体的形状     |
+
+*** 编码
+Encoding => Reencode => Custom 可以使你不那么眼花, 但是新增原来没有的字符时会保存不了, 要改成有该字符的编码才行?
+
+*** 字体信息随意填吧, Weight 那里不填 (默认是 Book) 就会显示 Regular
+*** 生成字体
+File => Generate Fonts
++ 两字节的问题, 保存类型改为 TrueType 即可, 直接改后缀为 .ttf 还是会报错.
++ 一些字体设计本身的问题导致的报错我也不懂, 就忽略了
++ 生成的字体文件无预览图, 用 FontForge 打开时会报有两个字体名什么的错误, 我也不知道是什么原因, 反正我就是改版本号, 然后 encoding 改成 Custom, 保存的名字改一改一般就好了
+
+*** 下划线
+Element -> Font Info -> General
+Underline Position: [-153], Height: [155]
+
+** Font Manager => Character Map
++ 用来查看字符集还挺好用的, Latin, Han, Common 随便看看, Character Detail 还可以复制字符, 当作一个最齐全的特殊字符工具来用还行
++ 很可惜不是说这个字体没有实现的字符就一定不会在 Character Table 中显示 (具体的显示规律我没深入研究)
