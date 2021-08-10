@@ -26,4 +26,4 @@
 缘莫问, 取被合成字体 YouYuan, Monaco, WenQuanYi Micro Hei Mono 的第一个字母组合而成
 
 * 更新
-v0.06: 修改下划线粗细
+v0.0.6: 修改下划线粗细
