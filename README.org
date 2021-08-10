@@ -4,7 +4,8 @@
 #+HTML_HEAD_EXTRA: <style type="text/css"> body {padding-left: 26%; background: #e3edcd;} #table-of-contents {position: fixed; width: 25%; height: 100%; top: 0; left: 0; overflow-y: scroll; resize: horizontal;} i {color: #666666;} pre, pre.src:before {color: #ffffff; background: #131926;} </style>
 #+HTML_HEAD_EXTRA: <script type="text/javascript"> function adjust_html(){document.getElementsByTagName("body")[0].style.cssText="padding-left: "+(parseInt(document.getElementById("table-of-contents").style.width)+5)+"px; background: #e3edcd;"}; window.onload=function (){document.getElementById("table-of-contents").addEventListener("mouseup",adjust_html,true)}</script>
 
-* 如果你也经历过以下情况, 那么你可以试试我合成的这款字体
+* 如果
+如果你也经历过以下情况, 那么你可以试试我合成的这款字体
 + org-mode 的表格对不齐
 + terminal 中的 mysql 表对不齐
 + 在 emacs 中对不同的字符集设置不同字体和大小来达到等宽，但是纯英文行的高度会明显比中文或混编的小
